@@ -11,8 +11,16 @@ homepage = "https://github.com/sh0rch/fast_chacha"
 documentation = "https://docs.rs/fast_chacha"
 keywords = ["chacha20", "crypto", "cryptography", "symmetric", "cipher"]
 categories = ["cryptography", "no-std", "algorithms", "no dependencies"]
-exclude = [".github/*", "tests/*", "examples/*", "target/*"]
-include = ["src/**", "README.md", "LICENSE", "asm/**", "Cargo.toml", "build.rs"]
+exclude = [".github/*", "examples/*", "target/*"]
+include = [
+    "src/**",
+    "README.md",
+    "LICENSE",
+    "asm/**",
+    "tests/**",
+    "Cargo.toml",
+    "build.rs",
+]
 
 [package.metadata.deb]
 maintainer = "sh0rch <sh0rch@iwl.dev>"
