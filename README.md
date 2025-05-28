@@ -91,6 +91,8 @@ fast_chacha ("ASM")     : 1.6701ms
 fast_chacha (Fallback)  : 25.0589ms
 ```
 
+Actual results of tests you can see on [Github Actions page](https://github.com/sh0rch/fast_chacha/actions/workflows/tests.yml).
+
 - **fast_chacha ("ASM")** is significantly faster than both the pure Rust fallback and the reference RustCrypto implementation.
 - The pure Rust fallback is also noticeably faster than RustCrypto's chacha20.
 

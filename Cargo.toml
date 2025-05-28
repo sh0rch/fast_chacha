@@ -10,7 +10,7 @@ repository = "https://github.com/sh0rch/fast_chacha"
 homepage = "https://github.com/sh0rch/fast_chacha"
 documentation = "https://docs.rs/fast_chacha"
 keywords = ["chacha20", "crypto", "cryptography", "symmetric", "cipher"]
-categories = ["cryptography", "no-std", "algorithms"]
+categories = ["cryptography", "no-std", "algorithms", "no dependencies"]
 exclude = [".github/*", "tests/*", "examples/*", "target/*"]
 
 [package.metadata.deb]
@@ -26,14 +26,3 @@ std = []
 [dev-dependencies]
 chacha20 = "0.9.1"
 rand = "0.9.1"
-
-[dependencies]
-rayon = "1.10.0"
-
-#[target.aarch64-unknown-linux-gnu]
-#linker = "clang"
-#ar = "llvm-ar"
-
-# [target.x86_64-pc-windows-gnu]
-# linker = "x86_64-w64-mingw32-gcc"
-# ar = "x86_64-w64-mingw32-ar"

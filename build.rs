@@ -106,7 +106,6 @@ fn main() {
                         );
                     asm.push_str(
                         "\n\
-                     // ---------- export NEON kernel (alias) -----------------------\n\
                      .globl  ChaCha20_neon\n\
                      .globl  _ChaCha20_neon\n\
                      .set    _ChaCha20_neon, ChaCha20_neon\n",
@@ -114,7 +113,6 @@ fn main() {
 
                     asm.push_str(
                         "\n\
-                             // ---- macOS stub: SVE label aliases NEON implementation --------\n\
                              .globl  _ChaCha20_ctr32_sve\n\
                              .globl  ChaCha20_ctr32_sve\n\
                              .set    _ChaCha20_ctr32_sve, _ChaCha20_neon\n\
@@ -132,12 +130,12 @@ fn main() {
                         .replace(
                             ".globl\tChaCha20_ctr32",
                             ".globl _ChaCha20_ctr32\n.globl ChaCha20_ctr32\n\
-                  .set   _ChaCha20_ctr32,ChaCha20_ctr32",
+                            .set   _ChaCha20_ctr32,ChaCha20_ctr32",
                         )
                         .replace(
                             ".globl\tChaCha20_neon",
                             ".globl _ChaCha20_neon\n.globl ChaCha20_neon\n\
-                  .set   _ChaCha20_neon,ChaCha20_neon",
+                            .set   _ChaCha20_neon,ChaCha20_neon",
                         );
 
                     if !features.contains("sve") {
