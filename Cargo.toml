@@ -10,7 +10,7 @@ repository = "https://github.com/sh0rch/fast_chacha"
 homepage = "https://github.com/sh0rch/fast_chacha"
 documentation = "https://docs.rs/fast_chacha"
 keywords = ["chacha20", "crypto", "cryptography", "symmetric", "cipher"]
-categories = ["cryptography", "no-std", "algorithms", "no dependencies"]
+categories = ["cryptography", "no-std", "algorithms"]
 exclude = [".github/*", "examples/*", "target/*"]
 include = [
     "src/**",
