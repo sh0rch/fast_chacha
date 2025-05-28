@@ -1,0 +1,39 @@
+[package]
+name = "fast_chacha"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["sh0rch <sh0rch@iwl.dev>"]
+description = "CPU-optimized ChaCha20 implementation with rust fallbacks"
+readme = "README.md"
+repository = "https://github.com/sh0rch/fast_chacha"
+homepage = "https://github.com/sh0rch/fast_chacha"
+documentation = "https://docs.rs/fast_chacha"
+keywords = ["chacha20", "crypto", "cryptography", "symmetric", "cipher"]
+categories = ["cryptography", "no-std", "algorithms"]
+exclude = [".github/*", "tests/*", "examples/*", "target/*"]
+
+[package.metadata.deb]
+maintainer = "sh0rch <sh0rch@iwl.dev>"
+
+[build-dependencies]
+cc = "1.0"
+
+[features]
+default = ["std"]
+std = []
+
+[dev-dependencies]
+chacha20 = "0.9.1"
+rand = "0.9.1"
+
+[dependencies]
+rayon = "1.10.0"
+
+#[target.aarch64-unknown-linux-gnu]
+#linker = "clang"
+#ar = "llvm-ar"
+
+# [target.x86_64-pc-windows-gnu]
+# linker = "x86_64-w64-mingw32-gcc"
+# ar = "x86_64-w64-mingw32-ar"
