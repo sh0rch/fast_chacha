@@ -1,6 +1,6 @@
 # fast\_chacha
 
-[![Crates.io](https://img.shields.io/crates/v/fast_chacha.svg)](https://crates.io/crates/fast_chacha)  [![docs.rs](https://docs.rs/fast_chacha/badge.svg)](https://docs.rs/fast_chacha)  [![License: Apache-2.0](https://img.shields.io/crates/l/fast_chacha.svg)](LICENSE)  [![CI](https://github.com/sh0rch/fast_chacha/actions/workflows/ci.yml/badge.svg)](https://github.com/sh0rch/fast_chacha/actions)
+[![Crates.io](https://img.shields.io/crates/v/fast_chacha.svg)](https://crates.io/crates/fast_chacha)  [![docs.rs](https://docs.rs/fast_chacha/badge.svg)](https://docs.rs/fast_chacha)  [![License: Apache-2.0](https://img.shields.io/crates/l/fast_chacha.svg)](LICENSE)  [![TESTS](https://github.com/sh0rch/fast_chacha/actions/workflows/tests.yml/badge.svg)](https://github.com/sh0rch/fast_chacha/actions)
 
 High-performance ChaCha20 stream cipher implementation with optional assembly acceleration (leveraging OpenSSL's assembler modules) and pure Rust fallback.
 
