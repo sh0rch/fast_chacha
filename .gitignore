@@ -18,6 +18,7 @@
 # Ignore IDE/project files
 /.idea/
 /.vscode/
+/.devcontainer
 /*.sublime-project
 /*.sublime-workspace
 

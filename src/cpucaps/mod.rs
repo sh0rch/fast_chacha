@@ -26,6 +26,11 @@
 //! - arm, aarch64: Uses the `arm` submodule for ARM CPUs.
 //! - mips, mips32r6, mips64, mips64r6: Uses the `mips` submodule for MIPS CPUs.
 //! - Others: Uses the `fallback` submodule as a generic implementation.
+#[cfg(all(target_os = "linux", not(target_arch = "x86"), not(target_arch = "x86_64")))]
+mod hwcap;
+/// Re-export all public items from the `hwcap` module for Linux.
+#[cfg(all(target_os = "linux", not(target_arch = "x86"), not(target_arch = "x86_64")))]
+pub use hwcap::get_auxv;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod x86;
@@ -54,7 +59,6 @@ mod mips;
     target_arch = "mips64r6"
 ))]
 pub use mips::*;
-
 /// Fallback for other platforms or when no ASM/cap detection is needed.
 /// This module provides a generic implementation for unsupported architectures.
 #[cfg(not(any(

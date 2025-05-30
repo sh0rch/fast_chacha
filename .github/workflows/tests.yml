@@ -7,49 +7,9 @@ on:
       - '*'
 
 jobs:
-  # linux-aarch64-native:
-  #   name: Linux / aarch64-unknown-linux-gnu (native)
-  #   runs-on:
-  #     - ubuntu-latest
-  #     - ARM64
-  #   strategy:
-  #     fail-fast: false
-
-  #   env:
-  #     CARGO_TERM_COLOR: always
-
-  #   steps:
-  #     - uses: actions/checkout@v4
-
-  #     - uses: actions/cache@v4
-  #       with:
-  #         path: |
-  #           ~/.cargo/registry
-  #           ~/.cargo/git
-  #           target
-  #         key: ${{ runner.os }}-aarch64-unknown-linux-gnu-cargo-${{ hashFiles('**/Cargo.lock') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-aarch64-unknown-linux-gnu-cargo-
-
-  #     - name: Install Rust target
-  #       run: rustup target add aarch64-unknown-linux-gnu
-
-  #     - name: Read crate version
-  #       id: ver
-  #       run: |
-  #         CRATE_VERSION=$(grep -m1 '^version' Cargo.toml | cut -d '"' -f2)
-  #         echo "CRATE_VERSION=$CRATE_VERSION" >> $GITHUB_ENV
-  #         echo "version=$CRATE_VERSION" >> $GITHUB_OUTPUT
-
-  #     - name: Build ${{ steps.ver.outputs.version }}
-  #       run: cargo build --target aarch64-unknown-linux-gnu --verbose
-
-  #     - name: Test
-  #       run: cargo test --target aarch64-unknown-linux-gnu --verbose -- --nocapture
-
   linux:
     name: Linux / ${{ matrix.target }}
-    runs-on: ubuntu-22.04
+    runs-on:  ubuntu-latest
 
     strategy:
       fail-fast: false
@@ -123,25 +83,10 @@ jobs:
       - name: Test
         run: |
           if [ "${{ matrix.uses-cross }}" = "true" ]; then
-            cross +nightly test --target ${{ matrix.target }} -Z build-std=std,core,alloc --verbose -- --nocapture
+            RUST_BACKTRACE=1 cross +nightly test --target ${{ matrix.target }} -Z build-std=std,core,alloc --verbose -- --nocapture
           else
-            cargo test --target ${{ matrix.target }} --verbose -- --nocapture
+            RUST_BACKTRACE=1 cargo test --target ${{ matrix.target }} --verbose -- --nocapture
           fi
-
-      - name: Copy compiled test binaries
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          rm -rf upload && mkdir -p upload
-          find target/aarch64-unknown-linux-gnu/debug/deps \
-              -maxdepth 1 -type f -perm -111 \
-              -exec cp {} upload/ \;
-
-      - uses: actions/upload-artifact@v4
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
-        with:
-          name: aarch64-tests
-          path: upload
-          if-no-files-found: error
 
   mac:
     name: macOS / ${{ matrix.target }}
@@ -191,29 +136,6 @@ jobs:
       - name: Test
         run: cargo test --target ${{ matrix.target }} --verbose -- --nocapture
 
-  # linux-arm64:
-  #   runs-on:
-  #     - self-hosted
-  #     - linux
-  #     - arm64
-  #   steps:
-  #     - uses: actions/checkout@v3
-
-  #     - name: Install Rust nightly + rust-src
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #         toolchain: nightly
-  #         components: rust-src
-  #         override: true
-  #         profile: minimal
-
-  #     - name: Build for AArch64
-  #       run: |
-  #         cargo +nightly build -Z build-std=std,core,alloc --verbose
-
-  #     - name: Test
-  #       run: cargo +nightly test -Z build-std=std,core,alloc --verbose -- --nocapture
-
   windows:
     name: Windows - ${{ matrix.os }}
     strategy:
@@ -240,21 +162,3 @@ jobs:
 
       - name: Test
         run: cargo test --verbose -- --nocapture
-
-  run-tests-arm64:
-    needs: linux
-    runs-on: [self-hosted, linux, ARM64]  # или ubuntu-22.04 с arch=arm64, если есть
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: aarch64-tests
-          path: tests/bin
-
-      - name: Run uploaded tests
-        run: |
-          cd tests/bin
-          chmod +x *
-          for bin in *; do
-            echo "=== $bin ==="
-            ./"$bin" --nocapture
-          done

@@ -14,84 +14,96 @@
  * limitations under the License.
  */
 
-/*!
- * MIPS CPU feature detection module.
- *
- * This module provides functionality to detect available hardware capabilities
- * (such as DSP and MSA extensions) on MIPS CPUs at runtime. The detected
- * features are stored in a global atomic variable for use by other parts of
- * the library.
- */
+//! MIPS CPU capabilities detection module.
+//!
+//! This module provides detection of MIPS CPU features at runtime,
+//! setting capability flags based on hardware support as reported by the OS.
+//! The detected capabilities are stored in a global variable for use by
+//! cryptographic or performance-sensitive code.
 
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
 use core::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
-/// Auxiliary vector type for hardware capabilities.
-pub const AT_HWCAP: usize = 16;
+#[cfg(any(target_os = "linux", target_os = "android"))]
+use super::get_auxv;
 
-extern "C" {
-    /// Retrieves the value of the given auxiliary vector type.
-    ///
-    /// # Arguments
-    ///
-    /// * `type_` - The type of auxiliary vector entry to retrieve.
-    ///
-    /// # Returns
-    ///
-    /// The value of the requested auxiliary vector entry.
-    pub fn getauxval(type_: usize) -> usize;
-}
-
-/// Global atomic variable storing the detected MIPS CPU capabilities.
-///
-/// Bit 0: DSP extension available  
-/// Bit 1: MSA extension available
+/// Global variable storing detected MIPS CPU capabilities.
+/// The value is set during initialization and used by other modules.
 #[no_mangle]
-pub static OPENSSL_mipscap_P: AtomicU32 = AtomicU32::new(0);
+pub static mut OPENSSL_mips_cap_P: u32 = 0;
 
-/// Atomic flag indicating whether CPU feature detection has been performed.
+/// Atomic flag indicating whether CPU capabilities have been initialized.
 pub static INITIALIZED: AtomicBool = AtomicBool::new(false);
 
-/// Initializes the MIPS CPU feature detection.
+/// Indicates whether the target architecture is 64-bit MIPS.
+#[cfg(any(target_arch = "mips", target_arch = "mips32r6"))]
+const IS_64BIT: bool = false;
+#[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
+const IS_64BIT: bool = true;
+
+/// Detects MIPS CPU capabilities from the given hardware capability bitmask.
 ///
-/// This function queries the hardware capabilities using the auxiliary vector,
-/// checks for the presence of DSP and MSA extensions, and stores the result
-/// in the global `OPENSSL_mipscap_P` variable. The function is safe to call
-/// multiple times, but detection will only be performed once.
+/// # Arguments
 ///
-/// # Safety
+/// * `hwcap` - Bitmask of hardware capabilities, typically obtained from the OS.
 ///
-/// This function is unsafe because it accesses global mutable state and
-/// calls an external C function.
-#[inline(never)]
+/// # Returns
+///
+/// Returns a bitmask of detected MIPS CPU features.
+fn detect_mips_capabilities(hwcap: usize) -> u32 {
+    let mut caps = 0u32;
+
+    // Hardware capability flags (from Linux kernel headers)
+    const HWCAP_MIPS_R6: usize = 1 << 0;
+    const HWCAP_MIPS_MSA: usize = 1 << 1;
+    const HWCAP_MIPS_DSP: usize = 1 << 2;
+    const HWCAP_MIPS_DSP2: usize = 1 << 3;
+
+    // Internal capability flags
+    const MIPS_CPU_R6: u32 = 1 << 0;
+    const MIPS_CPU_MSA: u32 = 1 << 1;
+    const MIPS_CPU_DSP: u32 = 1 << 2;
+    const MIPS_CPU_DSP2: u32 = 1 << 3;
+
+    // Set capability bits based on detected hardware features
+    if hwcap & HWCAP_MIPS_R6 != 0 {
+        caps |= MIPS_CPU_R6;
+    }
+    if hwcap & HWCAP_MIPS_MSA != 0 {
+        caps |= MIPS_CPU_MSA;
+    }
+    if hwcap & HWCAP_MIPS_DSP != 0 {
+        caps |= MIPS_CPU_DSP;
+    }
+    if hwcap & HWCAP_MIPS_DSP2 != 0 {
+        caps |= MIPS_CPU_DSP2;
+    }
+
+    caps
+}
+
+/// Initializes MIPS CPU capability detection.
+///
+/// This function reads hardware capability flags from the OS (via `get_auxv`),
+/// detects supported CPU features, and stores the result in the global
+/// `OPENSSL_mips_cap_P` variable. Initialization is performed only once.
+///
+/// This function is safe to call multiple times; only the first call will
+/// perform detection.
 pub fn init() {
-    // Ensure initialization is performed only once.
+    // Ensure initialization is performed only once
     if INITIALIZED.swap(true, Ordering::Relaxed) {
         return;
     }
-
-    // Retrieve hardware capabilities from the auxiliary vector.
-    let hw = unsafe { getauxval(AT_HWCAP) as u32 };
-
-    let mut cap = 0;
-
-    // Hardware capability flags for MIPS.
-    const HWCAP_DSP: u32 = 1 << 7; // DSP extension
-    const HWCAP_MSA: u32 = 1 << 18; // MSA extension
-
-    // Check for DSP extension support.
-    if hw & HWCAP_DSP != 0 {
-        cap |= 1 << 0;
+    {
+        // 16 is AT_HWCAP on Linux
+        let hwcap = get_auxv(16).unwrap_or(0); // AT_HWCAP
+        let caps = detect_mips_capabilities(hwcap);
+        unsafe {
+            OPENSSL_mips_cap_P = caps;
+        }
     }
-    // Check for MSA extension support.
-    if hw & HWCAP_MSA != 0 {
-        cap |= 1 << 1;
-    }
-
-    // Store the detected capabilities.
-    super::OPENSSL_mipscap_P.store(cap, Ordering::SeqCst);
-    // Mark initialization as complete.
     INITIALIZED.store(true, Ordering::Release);
 }
