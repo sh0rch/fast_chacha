@@ -50,7 +50,8 @@
 //! let nonce = [0u8; 12];
 //! let mut data = b"some data".to_vec();
 //! let mut cipher = FastChaCha20::new(&key, &nonce);
-//! cipher.apply_keystream_pure(&mut data);
+//! cipher.apply_keystream_pure(&mut data, 10); // 10 double rounds
+//! // `data` is now encrypted using the pure Rust implementation
 //! ```
 
 #![no_std]
@@ -75,15 +76,28 @@ static FALLBACK_TRIGGERED: AtomicBool = AtomicBool::new(false);
 /// * `inp` - Input buffer to be encrypted/decrypted.
 /// * `key` - 256-bit key as 8 u32 words.
 /// * `counter` - 128-bit counter as 4 u32 words.
-#[allow(unused_variables)]
-fn fallback(out: &mut [u8], key: &[u32; 8], counter: &mut [u32; 4]) {
-    out.chunks_mut(64).enumerate().for_each(|(i, out_chunk)| {
-        // XOR the input chunk with the keystream generated from the key and counter
-        fallback_chacha20::xor(out_chunk, key, counter);
-
-        // Increment the counter for the next block
+#[inline(always)]
+fn fallback(
+    out: &mut [u8],
+    len: usize,
+    keystream_only: bool,
+    key: &[u32; 8],
+    counter: &mut [u32; 4],
+    double_rounds: usize,
+) {
+    let mut offset = 0;
+    while offset < len {
+        let block_len = (len - offset).min(64);
+        fallback_chacha20::xor(
+            &mut out[offset..offset + block_len],
+            keystream_only,
+            key,
+            counter,
+            double_rounds,
+        );
         counter[0] = counter[0].wrapping_add(1);
-    });
+        offset += block_len;
+    }
 }
 
 /// C-compatible ChaCha20 function, used as a fallback or as the main implementation if assembly is not available.
@@ -108,10 +122,11 @@ pub unsafe extern "C" fn ChaCha20_ctr32_c(
     FALLBACK_TRIGGERED.store(true, Ordering::SeqCst);
 
     let out = slice::from_raw_parts_mut(out, len);
+    let keystream_only = inp.is_null();
     let key = &*(key as *const [u32; 8]);
     let ctr = &mut *(counter as *mut [u32; 4]);
 
-    fallback(out, key, ctr);
+    fallback(out, len, keystream_only, key, ctr, 10);
 }
 
 #[cfg(fast_chacha_asm)]
@@ -184,26 +199,28 @@ impl FastChaCha20 {
     /// let cipher = FastChaCha20::new(&key, &nonce);
     /// ```
     pub fn new(key: &[u8; 32], nonce: &[u8; 12]) -> Self {
-        assert!(key.len() == 32, "Key must be 32 bytes");
-        assert!(nonce.len() == 12, "Nonce must be 12 bytes");
+        debug_assert!(key.len() == 32, "Key must be 32 bytes");
+        debug_assert!(nonce.len() == 12, "Nonce must be 12 bytes");
 
-        let mut key_words = [0u32; 8];
+        init_cpu_caps();
 
-        for i in 0..8 {
-            key_words[i] =
-                u32::from_le_bytes([key[i * 4], key[i * 4 + 1], key[i * 4 + 2], key[i * 4 + 3]]);
-        }
+        let key_words = [
+            u32::from_le_bytes([key[0], key[1], key[2], key[3]]),
+            u32::from_le_bytes([key[4], key[5], key[6], key[7]]),
+            u32::from_le_bytes([key[8], key[9], key[10], key[11]]),
+            u32::from_le_bytes([key[12], key[13], key[14], key[15]]),
+            u32::from_le_bytes([key[16], key[17], key[18], key[19]]),
+            u32::from_le_bytes([key[20], key[21], key[22], key[23]]),
+            u32::from_le_bytes([key[24], key[25], key[26], key[27]]),
+            u32::from_le_bytes([key[28], key[29], key[30], key[31]]),
+        ];
 
-        let mut counter = [0u32; 4];
-        // The first counter word is left as zero; the next three are filled from the nonce.
-        for i in 0..3 {
-            counter[i + 1] = u32::from_le_bytes([
-                nonce[i * 4],
-                nonce[i * 4 + 1],
-                nonce[i * 4 + 2],
-                nonce[i * 4 + 3],
-            ]);
-        }
+        let counter = [
+            0,
+            u32::from_le_bytes([nonce[0], nonce[1], nonce[2], nonce[3]]),
+            u32::from_le_bytes([nonce[4], nonce[5], nonce[6], nonce[7]]),
+            u32::from_le_bytes([nonce[8], nonce[9], nonce[10], nonce[11]]),
+        ];
 
         Self { key_words, counter }
     }
@@ -227,15 +244,12 @@ impl FastChaCha20 {
         if data.is_empty() {
             return;
         }
-        let len = data.len();
-
-        init_cpu_caps();
 
         unsafe {
             ChaCha20_ctr32(
                 data.as_mut_ptr(),
                 data.as_mut_ptr(),
-                len,
+                data.len(),
                 self.key_words.as_ptr(),
                 self.counter.as_mut_ptr(),
             )
@@ -246,6 +260,7 @@ impl FastChaCha20 {
     ///
     /// # Arguments
     /// * `data` - Mutable buffer to encrypt/decrypt.
+    /// * `double_rounds` - Number of double rounds to apply (default is 10).
     ///
     /// # Example
     /// ```
@@ -255,13 +270,22 @@ impl FastChaCha20 {
     /// let nonce = [0u8; 12];
     /// let mut cipher = FastChaCha20::new(&key, &nonce);
     /// let mut data = [1u8, 2, 3, 4, 5];
-    /// cipher.apply_keystream_pure(&mut data);
+    /// cipher.apply_keystream_pure(&mut data, 10);
     /// ```
-    pub fn apply_keystream_pure(&mut self, data: &mut [u8]) {
+    pub fn apply_keystream_pure(&mut self, data: &mut [u8], double_rounds: usize) {
         if data.is_empty() {
             return;
         }
-        fallback(data, &self.key_words, &mut self.counter);
+        // Avoid aliasing mutable and immutable borrows by splitting the slice
+        fallback(data, data.len(), false, &self.key_words, &mut self.counter, double_rounds);
+    }
+
+    pub fn keystream_only(&mut self, data: &mut [u8]) {
+        if data.is_empty() {
+            return;
+        }
+        // Avoid aliasing mutable and immutable borrows by splitting the slice
+        fallback(data, data.len(), true, &self.key_words, &mut self.counter, 10);
     }
 
     /// Resets the internal counter to zero.

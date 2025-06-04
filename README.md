@@ -1,6 +1,6 @@
-# fast\_chacha
+# fast_chacha
 
-[![Crates.io](https://img.shields.io/crates/v/fast_chacha.svg)](https://crates.io/crates/fast_chacha)  [![docs.rs](https://docs.rs/fast_chacha/badge.svg)](https://docs.rs/fast_chacha)  [![License: Apache-2.0](https://img.shields.io/crates/l/fast_chacha.svg)](LICENSE)  [![TESTS](https://github.com/sh0rch/fast_chacha/actions/workflows/tests.yml/badge.svg)](https://github.com/sh0rch/fast_chacha/actions)
+[![Crates.io](https://img.shields.io/crates/v/fast_chacha.svg)](https://crates.io/crates/fast_chacha) [![docs.rs](https://docs.rs/fast_chacha/badge.svg)](https://docs.rs/fast_chacha) [![License: Apache-2.0](https://img.shields.io/crates/l/fast_chacha.svg)](LICENSE) [![TESTS](https://github.com/sh0rch/fast_chacha/actions/workflows/tests.yml/badge.svg)](https://github.com/sh0rch/fast_chacha/actions)
 
 High-performance ChaCha20 stream cipher implementation with optional assembly acceleration (leveraging OpenSSL's assembler modules) and pure Rust fallback.
 
@@ -8,10 +8,10 @@ High-performance ChaCha20 stream cipher implementation with optional assembly ac
 
 ## Features
 
-* **OpenSSL Assembly Modules**: Integrates optimized assembly routines sourced from OpenSSL for top-tier performance.
-* **Pure Rust Fallback**: Portable implementation when assembly is not supported on the target.
-* **Runtime CPU Detection**: Automatically selects the fastest backend at runtime.
-* **`no_std` Support**: Works in embedded and bare-metal environments (disable default `std`).
+- **OpenSSL Assembly Modules**: Integrates optimized assembly routines sourced from OpenSSL for top-tier performance.
+- **Pure Rust Fallback**: Portable implementation when assembly is not supported on the target.
+- **Runtime CPU Detection**: Automatically selects the fastest backend at runtime.
+- **`no_std` Support**: Works in embedded and bare-metal environments (disable default `std`).
 
 ---
 
@@ -63,9 +63,9 @@ cipher.apply_keystream_pure(&mut data);
 
 Full documentation is available on [docs.rs](https://docs.rs/fast_chacha):
 
-* [`FastChaCha20`](https://docs.rs/fast_chacha/latest/fast_chacha/struct.FastChaCha20.html)
-* [`apply_keystream`](https://docs.rs/fast_chacha/latest/fast_chacha/struct.FastChaCha20.html#method.apply_keystream)
-* [`apply_keystream_pure`](https://docs.rs/fast_chacha/latest/fast_chacha/struct.FastChaCha20.html#method.apply_keystream_pure)
+- [`FastChaCha20`](https://docs.rs/fast_chacha/latest/fast_chacha/struct.FastChaCha20.html)
+- [`apply_keystream`](https://docs.rs/fast_chacha/latest/fast_chacha/struct.FastChaCha20.html#method.apply_keystream)
+- [`apply_keystream_pure`](https://docs.rs/fast_chacha/latest/fast_chacha/struct.FastChaCha20.html#method.apply_keystream_pure)
 
 ---
 
@@ -86,9 +86,10 @@ Conditional compilation flag `fast_chacha_asm` is enabled when assembly (from Op
 Here is a sample result of the comparison test for encrypting a 1 MiB block:
 
 ```text
-chacha20 (RustCrypto)   : 117.5313ms
-fast_chacha ("ASM")     : 1.6701ms
-fast_chacha (Fallback)  : 25.0589ms
+chacha20 (RustCrypto)   : 111.8584ms
+fast_chacha ("ASM")     : 547.7µs
+fast_chacha (Fallback)  : 14.6214ms
+chacha6 (Fallback)      : 9.4224ms
 ```
 
 Actual results of tests you can see on [Github Actions page](https://github.com/sh0rch/fast_chacha/actions/workflows/tests.yml).
@@ -110,7 +111,7 @@ Licensed under the [Apache License, Version 2.0](LICENSE) © 2025 sh0rch [sh0rch
 
 Contributions, issues, and feature requests are welcome! Please open an issue or pull request on GitHub:
 
-[https://github.com/sh0rch/fast\_chacha](https://github.com/sh0rch/fast_chacha)
+[https://github.com/sh0rch/fast_chacha](https://github.com/sh0rch/fast_chacha)
 
 ---
 

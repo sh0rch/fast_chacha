@@ -65,6 +65,7 @@ fn compare_chacha20_vs_fast_chacha() {
     let mut data_std = plain.clone();
     let mut data_fast = plain.clone();
     let mut data_fallback = plain.clone();
+    let mut data_6 = plain.clone();
 
     // Encrypt with RustCrypto's chacha20
     #[cfg(feature = "std")]
@@ -87,7 +88,7 @@ fn compare_chacha20_vs_fast_chacha() {
     if use_asm {
         fast_cipher.apply_keystream(&mut data_fast[..]);
     } else {
-        fast_cipher.apply_keystream_pure(&mut data_fast[..]);
+        fast_cipher.apply_keystream_pure(&mut data_fast[..], 10);
     }
 
     #[cfg(feature = "std")]
@@ -99,15 +100,27 @@ fn compare_chacha20_vs_fast_chacha() {
 
     let mut fallback_cipher = FastChaCha20::new(&key, &nonce);
     fallback_cipher.seek(64);
-    fallback_cipher.apply_keystream_pure(&mut data_fallback[..]);
+    fallback_cipher.apply_keystream_pure(&mut data_fallback[..], 10);
+
+    #[cfg(feature = "std")]
+    let fallback_time = start.elapsed();
+
+    // Encrypt with chacha6 (pure fallback backend)
+    #[cfg(feature = "std")]
+    let start = Instant::now();
+
+    let mut chacha6_cipher = FastChaCha20::new(&key, &nonce);
+    chacha6_cipher.seek(64);
+    chacha6_cipher.apply_keystream_pure(&mut data_6[..], 3);
 
     #[cfg(feature = "std")]
     {
-        let fallback_time = start.elapsed();
+        let chacha6_time = start.elapsed();
 
         println!("chacha20 (RustCrypto)\t: {:?}", std_time);
         println!("fast_chacha ({:?})\t: {:?}", if use_asm { "ASM" } else { "Fallback" }, fast_time);
         println!("fast_chacha (Fallback)\t: {:?}", fallback_time);
+        println!("chacha6 (Fallback)\t: {:?}", chacha6_time);
     }
     // Check that all outputs are identical (compatibility check)
     assert!(
@@ -131,7 +144,7 @@ fn compare_chacha20_vs_fast_chacha() {
     if use_asm {
         fast_cipher_dec.apply_keystream(&mut data_fast[..]);
     } else {
-        fast_cipher_dec.apply_keystream_pure(&mut data_fast[..]);
+        fast_cipher_dec.apply_keystream_pure(&mut data_fast[..], 10);
     }
     assert!(data_fast[..] == plain[..], "Decrypted data is not equal to original data.");
 }
