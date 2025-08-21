@@ -173,6 +173,7 @@ fn init_cpu_caps() {
 ///
 ///
 #[derive(Clone)]
+#[cfg_attr(feature = "zeroize", derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop))]
 pub struct FastChaCha20 {
     /// 256-bit key as 8 u32 words.
     key_words: [u32; 8],
